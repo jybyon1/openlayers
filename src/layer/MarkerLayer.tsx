@@ -1,4 +1,10 @@
-import react, { useContext, useEffect, useState } from "react";
+import {
+  useContext,
+  useEffect,
+  useState,
+  Dispatch,
+  SetStateAction,
+} from "react";
 
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
@@ -14,17 +20,25 @@ import { Circle as CircleStyle, Fill, Icon, Style, Stroke } from "ol/style";
 import markerImage from "../assets/images/marker.png";
 
 import MapContext from "../map/MapContext";
+import { Coordinate } from "ol/coordinate";
 
 interface MarkerLayerProps {
   reset?: boolean;
   zIndex?: number;
   buttonType?: "marker" | "input" | "reset" | "none";
+  setInputValue: Dispatch<
+    SetStateAction<{
+      position: Coordinate;
+      text: string;
+    }>
+  >;
 }
 
 const MarkerLayer = ({
   reset = false,
   zIndex = 20,
   buttonType,
+  setInputValue,
 }: MarkerLayerProps) => {
   const { map } = useContext(MapContext);
 
@@ -130,7 +144,7 @@ const MarkerLayer = ({
             if (!center) return;
 
             inputOverlay = new Overlay({
-              element: createLabelElement(),
+              element: createLabelElement(center),
               position: center,
               positioning: "center-center",
               stopEvent: false,
@@ -151,14 +165,38 @@ const MarkerLayer = ({
     };
   }, [map, markerLayer, buttonType]);
 
-  const createLabelElement = () => {
+  const createLabelElement = (position: Coordinate) => {
+    const container = document.createElement("div");
+
     const input = document.createElement("input");
     input.style.width = "100px";
     input.style.height = "20px";
-    input.style.border = "none";
+    input.style.border = "1px solid white";
+    input.style.borderRadius = "4px";
+    input.style.backgroundColor = "#ccc";
     input.className = "input-overlay";
+    container.appendChild(input);
 
-    return input;
+    const button = document.createElement("button");
+    button.textContent = "등록";
+    button.style.borderRadius = "4px";
+    button.style.border = "1px solid white";
+    button.style.color = "white";
+    button.style.backgroundColor = "#797979";
+    button.style.marginLeft = "2px";
+    button.style.cursor = "pointer";
+    button.onclick = () => {
+      setInputValue({
+        position: position,
+        text: input.value,
+      });
+
+      container.removeChild(input);
+      container.removeChild(button);
+    };
+    container.appendChild(button);
+
+    return container;
   };
 
   return null;

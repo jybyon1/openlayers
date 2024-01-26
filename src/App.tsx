@@ -1,10 +1,13 @@
 import styled from "styled-components";
 import MainPage from "./page/MainPage";
+import Map from "./map/Map";
 
 function App() {
   return (
     <ComponentWrapper>
-      <MainPage />
+      <Map>
+        <MainPage />
+      </Map>
     </ComponentWrapper>
   );
 }

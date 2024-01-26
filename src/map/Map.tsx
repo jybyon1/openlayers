@@ -9,10 +9,11 @@ import { Tile as TileLayer } from "ol/layer";
 import { OSM } from "ol/source";
 import { ZoomSlider } from "ol/control";
 import { defaults as defaultInteraction } from "ol/interaction";
-import { Pointer } from "ol/interaction";
-
-//기본 투영법 : 지도 좌표계 설정
-export const DefaultProjection = "EPSG:3857";
+import {
+  DefaultProjection,
+  mapCoordinate,
+  mapZoom,
+} from "../constants/mapConfig";
 
 const Map = ({ children }: { children: React.ReactNode }): JSX.Element => {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -37,11 +38,8 @@ const Map = ({ children }: { children: React.ReactNode }): JSX.Element => {
       target: "map",
       view: new View({
         projection: DefaultProjection,
-        center: fromLonLat(
-          [127.101003819449, 36.8275878724897],
-          DefaultProjection
-        ),
-        zoom: 9,
+        center: fromLonLat(mapCoordinate, DefaultProjection),
+        zoom: mapZoom,
       }),
     });
     map.setTarget(mapRef.current!);
