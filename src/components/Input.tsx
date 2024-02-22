@@ -1,18 +1,16 @@
 import styled from "styled-components";
-import { forwardRef, ReactElement, Ref } from "react";
+import { forwardRef, InputHTMLAttributes, ReactElement, Ref } from "react";
 
-const Input = forwardRef((ref: Ref<HTMLInputElement>): ReactElement | null => {
-  return (
-    <ComponentWrapper ref={ref}>
-      <InputComponent />
-    </ComponentWrapper>
-  );
-});
-
-const ComponentWrapper = styled.div`
-  width: 100px;
-  height: 20px;
-`;
+export interface IInput extends InputHTMLAttributes<HTMLInputElement> {
+  isopen?: boolean;
+  onOpen?: () => void;
+  onClose?: () => void;
+}
+const Input = forwardRef(
+  ({ ...props }: IInput, ref: Ref<HTMLInputElement>): ReactElement => {
+    return <InputComponent {...props} ref={ref} />;
+  }
+);
 
 const InputComponent = styled.input`
   border: 1px solid white;

@@ -1,8 +1,8 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useRef } from "react";
 import styled from "styled-components";
-import Map from "../map/Map";
 import { Button } from "../components/Button";
 import { FaTrashAlt, FaMapMarkerAlt, FaPen } from "react-icons/fa";
+import { HiOutlineDotsHorizontal } from "react-icons/hi";
 import { TiHome } from "react-icons/ti";
 
 import { topLeftControls } from "../styles/map.styled";
@@ -16,14 +16,27 @@ import {
 } from "../constants/mapConfig";
 import { fromLonLat } from "ol/proj";
 import MapContext from "../map/MapContext";
+import InputLayer from "../layer/InputLayer";
+import Menu from "../components/Menu";
+import { useDisclosure } from "../hook/useDisclosure";
+import MeaserToolBox from "../map/components/MeasureToolBox";
 
 export type ButtonType = "marker" | "input" | "reset" | "none";
 const MainPage = () => {
   const { map } = useContext(MapContext);
 
+  const toolboxButtonRef = useRef<HTMLButtonElement>(null);
+
+  const {
+    isOpen: isToolboxOpen,
+    onClose: onToolboxClose,
+    onToggle: onToolboxToggle,
+  } = useDisclosure();
+
   const [activeBtn, setActiveBtn] = useState<ButtonType>();
   const [mapReset, setMapReset] = useState<boolean>(false);
 
+  const [inputValue, setInputValue] = useState<string>("");
   const [labelValue, setLabelValue] = useState<{
     position: Coordinate;
     text: string;
@@ -44,35 +57,59 @@ const MainPage = () => {
     );
   };
 
+  const handleInputSubmit = (value: string) => {
+    // 입력 값 업데이트
+    setInputValue(value);
+    console.log(value);
+  };
+
   return (
     <ComponentWrapper>
       <TopLeftMapControls>
+        <Button onClick={() => setMapCenter()}>
+          <TiHome style={{ fontSize: "14px" }} />
+        </Button>
         <Button
-          icon={<TiHome style={{ fontSize: "14px" }} />}
-          onClick={() => setMapCenter()}
-        />
-        <Button
-          icon={<FaMapMarkerAlt />}
           active={activeBtn === "marker"}
           onClick={() => setActiveBtn("marker")}
-        />
+        >
+          <FaMapMarkerAlt />
+        </Button>
         <Button
-          icon={<FaPen />}
           active={activeBtn === "input"}
           onClick={() => setActiveBtn("input")}
-        />
+        >
+          <FaPen />
+        </Button>
         <Button
-          icon={<FaTrashAlt />}
           onClick={() => {
             setActiveBtn("reset");
             setMapReset(!mapReset);
           }}
-        />
+        >
+          <FaTrashAlt />
+        </Button>
+        <Button
+          ref={toolboxButtonRef}
+          onClick={() => {
+            onToolboxToggle();
+          }}
+        >
+          <HiOutlineDotsHorizontal />
+        </Button>
       </TopLeftMapControls>
-      <MarkerLayer
+      <Menu
+        isOpen={isToolboxOpen}
+        onClose={onToolboxClose}
+        triggerRef={toolboxButtonRef}
+      >
+        <MeaserToolBox />
+      </Menu>
+      <MarkerLayer buttonType={activeBtn} reset={mapReset} />
+      <InputLayer
         buttonType={activeBtn}
         reset={mapReset}
-        setInputValue={setLabelValue}
+        setInputValue={setInputValue}
       />
       <LabelLayer reset={mapReset} labelValue={labelValue} />
     </ComponentWrapper>

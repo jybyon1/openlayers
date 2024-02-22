@@ -5,6 +5,7 @@ export const controls = css`
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 10px;
   z-index: 1;
 `;
 
@@ -27,10 +28,4 @@ export const bottomRightControls = css`
   ${controls};
   bottom: 10px;
   right: 10px;
-`;
-
-export const center = css`
-  display: flex;
-  justify-content: center;
-  align-items: center;
 `;

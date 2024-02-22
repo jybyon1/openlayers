@@ -1,40 +1,37 @@
-import { ReactNode } from "react";
+import { ButtonHTMLAttributes, ReactElement, Ref, forwardRef } from "react";
 import styled from "styled-components";
-import { center } from "../styles/map.styled";
+import { center } from "../styles/common.styled";
 
-interface ButtonProps {
-  text?: string;
-  icon?: ReactNode;
-  length?: string;
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   active?: boolean;
-  onClick?: () => void;
 }
 
-export const Button = (props: ButtonProps) => {
-  const { text, icon, length = "", active = false, onClick } = props;
-  return (
-    <ComponentWrapper onClick={onClick}>
-      <ButtonWrapper $length={length} $active={active ? "true" : "false"}>
-        {icon}
-        {text}
-      </ButtonWrapper>
-    </ComponentWrapper>
-  );
-};
+export const Button = forwardRef(
+  (
+    { children, active, ...props }: ButtonProps,
+    ref: Ref<HTMLButtonElement>
+  ): ReactElement => {
+    return (
+      <ComponentWrapper>
+        <ButtonWrapper {...props} ref={ref} $active={active ? "true" : "false"}>
+          {children}
+        </ButtonWrapper>
+      </ComponentWrapper>
+    );
+  }
+);
 
 const ComponentWrapper = styled.div`
   z-index: 999;
 `;
 
 const ButtonWrapper = styled.button<{
-  $length: string;
   $active: "true" | "false";
 }>`
   ${center}
-  width: ${({ $length }) => ($length ? $length : "24px")};
-  height: ${({ $length }) => ($length ? $length : "24px")};
+  padding: 0.3rem;
   border-radius: 4px;
-  border: none;
+  border: #adacac 0.5px solid;
   background-color: ${({ $active }) => ($active === "true" ? "#ccc" : "#fff")};
   cursor: pointer;
   &:active,
