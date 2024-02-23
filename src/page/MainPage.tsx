@@ -5,7 +5,7 @@ import { FaTrashAlt, FaMapMarkerAlt, FaPen } from "react-icons/fa";
 import { HiOutlineDotsHorizontal } from "react-icons/hi";
 import { TiHome } from "react-icons/ti";
 
-import { topLeftControls } from "../styles/map.styled";
+import { bottomLeftControls, topLeftControls } from "../styles/map.styled";
 import MarkerLayer from "../layer/MarkerLayer";
 import { Coordinate } from "ol/coordinate";
 import LabelLayer from "../layer/LabelLayer";
@@ -20,6 +20,7 @@ import InputLayer from "../layer/InputLayer";
 import Menu from "../components/Menu";
 import { useDisclosure } from "../hook/useDisclosure";
 import MeaserToolBox from "../map/components/MeasureToolBox";
+import ScaleLineControl from "../map/components/ScaleLineControl";
 
 export type ButtonType = "marker" | "input" | "reset" | "none";
 const MainPage = () => {
@@ -98,6 +99,9 @@ const MainPage = () => {
           <HiOutlineDotsHorizontal />
         </Button>
       </TopLeftMapControls>
+      <BottomLeftMapControls>
+        <ScaleLineControl />
+      </BottomLeftMapControls>
       <Menu
         isOpen={isToolboxOpen}
         onClose={onToolboxClose}
@@ -105,13 +109,15 @@ const MainPage = () => {
       >
         <MeaserToolBox />
       </Menu>
-      <MarkerLayer buttonType={activeBtn} reset={mapReset} />
-      <InputLayer
-        buttonType={activeBtn}
-        reset={mapReset}
-        setInputValue={setInputValue}
-      />
-      <LabelLayer reset={mapReset} labelValue={labelValue} />
+      <>
+        <MarkerLayer buttonType={activeBtn} reset={mapReset} />
+        <InputLayer
+          buttonType={activeBtn}
+          reset={mapReset}
+          setInputValue={setInputValue}
+        />
+        <LabelLayer reset={mapReset} labelValue={labelValue} />
+      </>
     </ComponentWrapper>
   );
 };
@@ -125,6 +131,12 @@ const TopLeftMapControls = styled.div`
   top: 280px;
   z-index: 2;
   gap: 5px;
+`;
+
+const BottomLeftMapControls = styled.div`
+  ${bottomLeftControls};
+  z-index: 2;
+  bottom: -910px;
 `;
 
 export default MainPage;
