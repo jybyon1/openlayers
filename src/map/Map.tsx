@@ -3,7 +3,7 @@ import styled from "styled-components";
 import MapContext from "./MapContext";
 import "ol/ol.css";
 import { Map as OlMap, View } from "ol";
-import { defaults as defaultControls } from "ol/control";
+import { OverviewMap, defaults as defaultControls } from "ol/control";
 import { fromLonLat } from "ol/proj";
 import { Tile as TileLayer } from "ol/layer";
 import { OSM } from "ol/source";
@@ -31,7 +31,7 @@ const Map = ({ children }: { children: React.ReactNode }): JSX.Element => {
       }),
       layers: [
         new TileLayer({
-          source: new OSM(), // OpenStreetMap 타일 레 이어
+          source: new OSM(), // OpenStreetMap 타일 레이어
         }),
       ],
       // HTML 요소의 id가 "map"인 요소를 대상으로 함
@@ -44,6 +44,8 @@ const Map = ({ children }: { children: React.ReactNode }): JSX.Element => {
     });
     map.setTarget(mapRef.current!);
     setMapObj(map);
+
+    map.setTarget(mapRef.current!);
 
     //줌 슬라이더 생성
     const zoomSlider = new ZoomSlider();

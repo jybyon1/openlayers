@@ -1,44 +1,56 @@
-import { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import styled from "styled-components";
+import VectorLayer from "ol/layer/Vector";
+import VectorSource from "ol/source/Vector";
+import { Circle as CircleStyle, Fill, Stroke, Style } from "ol/style";
+import { Draw } from "ol/interaction";
+import Overlay from "ol/Overlay";
+import { unByKey } from "ol/Observable";
+import { Circle, LineString, Polygon } from "ol/geom";
+import MapContext from "../MapContext";
+import { center, columnBox, rowBox } from "../../styles/common.styled";
+import { Type as GeometryType } from "ol/geom/Geometry";
+
 import {
   FaDraftingCompass,
   FaRulerCombined,
   FaVectorSquare,
 } from "react-icons/fa";
-
-import MapContext from "../MapContext";
-import VectorLayer from "ol/layer/Vector";
-import VectorSource from "ol/source/Vector";
-import { center, columnBox, rowBox } from "../../styles/common.styled";
-import { Draw } from "ol/interaction";
-import { getArea, getLength } from "ol/sphere.js";
-import { LineString, Polygon } from "ol/geom";
 import { Coordinate } from "ol/coordinate";
-import { unByKey } from "ol/Observable";
-import { Overlay } from "ol";
-import { Fill, Stroke, Style } from "ol/style";
-import CircleStyle from "ol/style/Circle";
-import { Type as GeometryType } from "ol/geom/Geometry";
+import { EventsKey } from "ol/events";
+import {
+  formatArea,
+  formatLength,
+  formatRadius,
+} from "../../utils/measureFormat";
 
 type MeasureType = "LineString" | "Polygon" | "Circle";
 
-interface IMeaserToolBox {
-  reset: boolean;
-}
-
-const MeaserToolBox = ({ reset }: IMeaserToolBox) => {
+const MeasureTest = () => {
   const { map } = useContext(MapContext);
 
   const [measureLayer, setMeasureLayer] = useState<VectorLayer<any>>();
-  const [measureTooltip, setMeasureTooltip] = useState<Overlay>();
   const [measureType, setMeasureType] = useState<MeasureType>();
+  const [measureTooltip, setMeasureTooltip] = useState<Overlay>();
   const [measureDraw, setMeasureDraw] = useState<Draw>();
 
   const measureTooltipElement = document.createElement("div");
+  measureTooltipElement.className = "ol-tooltip ol-tooltip-measure";
 
-  const style = new Style({
+  const polygonStyle = new Style({
+    stroke: new Stroke({
+      color: "#3385ff",
+      width: 2,
+      lineDash: [0, 0],
+    }),
     fill: new Fill({
-      color: "rgba(255, 255, 255, 0.384)",
+      color: "rgba(255, 255, 255, 0.5)",
+    }),
+  });
+
+  const drawStyle = new Style({
+    fill: new Fill({
+      color: "rgba(255, 255, 255, 0.2)",
     }),
     stroke: new Stroke({
       color: "rgba(0, 0, 0, 0.5)",
@@ -59,74 +71,17 @@ const MeaserToolBox = ({ reset }: IMeaserToolBox) => {
   useEffect(() => {
     if (!map) return;
 
-    const _measureLayer = new VectorLayer({
+    const vector = new VectorLayer({
       source: new VectorSource(),
-      style: style,
-      zIndex: 100,
+      style: polygonStyle,
     });
-
-    setMeasureLayer(_measureLayer);
-    map.addLayer(_measureLayer);
+    setMeasureLayer(vector);
+    map.addLayer(vector);
 
     return () => {
-      map.removeLayer(_measureLayer);
+      map.removeLayer(vector);
     };
   }, [map]);
-
-  /**
-   * Format area output.
-   * @param {Polygon} polygon The polygon.
-   * @return {string} Formatted area.
-   */
-  const formatArea = (polygon: Polygon) => {
-    const area = getArea(polygon);
-    let output;
-    if (area > 10000) {
-      output =
-        Math.round((area / 1000000) * 100) / 100 + " " + "km<sup>2</sup>";
-    } else {
-      output = Math.round(area * 100) / 100 + " " + "m<sup>2</sup>";
-    }
-    return output;
-  };
-
-  /**
-   * Format length output.
-   * @param {LineString} line The line.
-   * @return {string} The formatted length.
-   */
-  const formatLength = function (line: LineString) {
-    const length = getLength(line);
-    let output;
-    if (length > 100) {
-      output = Math.round((length / 1000) * 100) / 100 + " " + "km";
-    } else {
-      output = Math.round(length * 100) / 100 + " " + "m";
-    }
-    return output;
-  };
-
-  const createMeasureTooltip = () => {
-    if (!map) return;
-
-    if (measureTooltip) {
-      map.removeOverlay(measureTooltip);
-    }
-
-    if (measureTooltipElement) {
-      measureTooltipElement?.parentNode?.removeChild(measureTooltipElement);
-    }
-    measureTooltipElement.className = "ol-tooltip ol-tooltip-measure";
-    const _measureTooltip = new Overlay({
-      element: measureTooltipElement,
-      offset: [0, -15],
-      positioning: "bottom-center",
-      stopEvent: false,
-      insertFirst: false,
-    });
-    setMeasureTooltip(_measureTooltip);
-    map.addOverlay(_measureTooltip);
-  };
 
   const addInteraction = () => {
     if (!map || !measureLayer) return;
@@ -139,49 +94,69 @@ const MeaserToolBox = ({ reset }: IMeaserToolBox) => {
     } else {
       type = "Circle";
     }
-
     const draw = new Draw({
       source: measureLayer.getSource(),
       type: type,
+      style: drawStyle,
     });
-
-    createMeasureTooltip();
-
     map.addInteraction(draw);
     setMeasureDraw(draw);
 
-    let listener: any;
-    draw.on("drawstart", (e) => {
-      // set sketch
+    createMeasureTooltip();
+    addMeasureTooltipChangeEvent(draw);
+  };
+
+  const addMeasureTooltipChangeEvent = (newDraw: Draw) => {
+    if (!map || !measureTooltip) return;
+
+    let changeEventListener: EventsKey;
+
+    newDraw.on("drawstart", (e) => {
       const sketch = e.feature;
       const geometry = sketch.getGeometry();
 
       let tooltipCoord: Coordinate;
       if (geometry) {
-        listener = geometry.on("change", (evt) => {
+        changeEventListener = geometry.on("change", (evt) => {
           const geom = evt.target;
           let output;
-          if (geom instanceof Polygon) {
-            output = formatArea(geom);
-            tooltipCoord = geom.getInteriorPoint().getCoordinates();
-          } else if (geom instanceof LineString) {
+          if (geom instanceof LineString) {
             output = formatLength(geom);
             tooltipCoord = geom.getLastCoordinate();
+          } else if (geom instanceof Polygon) {
+            output = formatArea(geom);
+            tooltipCoord = geom.getInteriorPoint().getCoordinates();
+          } else if (geom instanceof Circle) {
+            output = formatRadius(geom);
+            tooltipCoord = geom.getFirstCoordinate();
           }
           if (output) measureTooltipElement.innerHTML = output;
-          if (measureTooltip) measureTooltip.setPosition(tooltipCoord);
+          measureTooltip.setPosition(tooltipCoord);
         });
       }
     });
 
-    draw.on("drawend", () => {
-      measureTooltipElement.className = "ol-tooltip ol-tooltip-static";
-      if (measureTooltip) measureTooltip.setOffset([0, -7]);
+    newDraw.on("drawend", () => {
+      measureTooltip.setOffset([0, 0]);
 
       createMeasureTooltip();
       // 이벤트 리스너를 해제하는 메소드
-      unByKey(listener);
+      unByKey(changeEventListener);
     });
+  };
+
+  const createMeasureTooltip = () => {
+    if (!map) return;
+
+    const _measureTooltip = new Overlay({
+      element: measureTooltipElement,
+      offset: [0, -15],
+      positioning: "bottom-center",
+      stopEvent: false,
+      insertFirst: false,
+    });
+    map.addOverlay(_measureTooltip);
+    setMeasureTooltip(_measureTooltip);
   };
 
   useEffect(() => {
@@ -274,4 +249,4 @@ const ToolText = styled.span`
   font-weight: bold;
 `;
 
-export default MeaserToolBox;
+export default MeasureTest;

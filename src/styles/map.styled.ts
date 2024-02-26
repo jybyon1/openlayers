@@ -4,7 +4,6 @@ export const controls = css`
   position: absolute;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 10px;
   z-index: 1;
 `;

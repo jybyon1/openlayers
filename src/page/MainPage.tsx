@@ -21,6 +21,8 @@ import Menu from "../components/Menu";
 import { useDisclosure } from "../hook/useDisclosure";
 import MeaserToolBox from "../map/components/MeasureToolBox";
 import ScaleLineControl from "../map/components/ScaleLineControl";
+import MeasureTest from "../map/components/MeasureTest";
+import OverviewControl from "../map/components/OverviewControl";
 
 export type ButtonType = "marker" | "input" | "reset" | "none";
 const MainPage = () => {
@@ -58,48 +60,50 @@ const MainPage = () => {
     );
   };
 
+  // 입력 값 업데이트
   const handleInputSubmit = (value: string) => {
-    // 입력 값 업데이트
     setInputValue(value);
     console.log(value);
   };
 
+  const buttonList = [
+    { icon: <TiHome style={{ fontSize: "14px" }} />, onClick: setMapCenter },
+    {
+      icon: <FaMapMarkerAlt />,
+      activeBtn: "marker",
+      onClick: () => setActiveBtn("marker"),
+    },
+    {
+      icon: <FaPen />,
+      activeBtn: "input",
+      onClick: () => setActiveBtn("input"),
+    },
+    {
+      icon: <FaTrashAlt />,
+      onClick: () => {
+        setActiveBtn("reset");
+        setMapReset(!mapReset);
+      },
+    },
+    { icon: <HiOutlineDotsHorizontal />, onClick: onToolboxToggle },
+  ];
+
   return (
     <ComponentWrapper>
       <TopLeftMapControls>
-        <Button onClick={() => setMapCenter()}>
-          <TiHome style={{ fontSize: "14px" }} />
-        </Button>
-        <Button
-          active={activeBtn === "marker"}
-          onClick={() => setActiveBtn("marker")}
-        >
-          <FaMapMarkerAlt />
-        </Button>
-        <Button
-          active={activeBtn === "input"}
-          onClick={() => setActiveBtn("input")}
-        >
-          <FaPen />
-        </Button>
-        <Button
-          onClick={() => {
-            setActiveBtn("reset");
-            setMapReset(!mapReset);
-          }}
-        >
-          <FaTrashAlt />
-        </Button>
-        <Button
-          ref={toolboxButtonRef}
-          onClick={() => {
-            onToolboxToggle();
-          }}
-        >
-          <HiOutlineDotsHorizontal />
-        </Button>
+        {buttonList.map((button, index) => (
+          <Button
+            key={index}
+            active={button.activeBtn ? activeBtn === button.activeBtn : false}
+            ref={button.activeBtn === "toolbox" ? toolboxButtonRef : null}
+            onClick={button.onClick}
+          >
+            {button.icon}
+          </Button>
+        ))}
       </TopLeftMapControls>
       <BottomLeftMapControls>
+        <OverviewControl />
         <ScaleLineControl />
       </BottomLeftMapControls>
       <Menu
@@ -107,7 +111,8 @@ const MainPage = () => {
         onClose={onToolboxClose}
         triggerRef={toolboxButtonRef}
       >
-        <MeaserToolBox />
+        {/* <MeaserToolBox reset={mapReset} /> */}
+        <MeasureTest />
       </Menu>
       <>
         <MarkerLayer buttonType={activeBtn} reset={mapReset} />
@@ -130,13 +135,14 @@ const TopLeftMapControls = styled.div`
   ${topLeftControls}
   top: 280px;
   z-index: 2;
-  gap: 5px;
+  gap: 0.3rem;
 `;
 
 const BottomLeftMapControls = styled.div`
   ${bottomLeftControls};
   z-index: 2;
   bottom: -910px;
+  gap: 0.3rem;
 `;
 
 export default MainPage;

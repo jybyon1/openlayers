@@ -34,6 +34,7 @@ const ComponentWrapper = styled.div``;
 
 const OriginalScaleLine = styled.div`
   > .ol-scale-line {
+    width: 70px;
     background-color: white;
     position: relative;
     bottom: 0;
