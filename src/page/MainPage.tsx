@@ -19,12 +19,15 @@ import { useDisclosure } from "../hook/useDisclosure";
 import ScaleLineControl from "../map/components/ScaleLineControl";
 import OverviewControl from "../map/components/OverviewControl";
 import MeaserToolBox from "../map/components/MeaserToolBox";
+import { useSetRecoilState } from "recoil";
+import { gisMapResetStateAtom } from "../store";
 
 export type ButtonType = "marker" | "input" | "reset" | "none";
 const MainPage = () => {
   const { map } = useContext(MapContext);
 
   const toolboxButtonRef = useRef<HTMLButtonElement>(null);
+  const setGisResetState = useSetRecoilState(gisMapResetStateAtom);
 
   const {
     isOpen: isToolboxOpen,
@@ -33,7 +36,6 @@ const MainPage = () => {
   } = useDisclosure();
 
   const [activeBtn, setActiveBtn] = useState<ButtonType>();
-  const [mapReset, setMapReset] = useState<boolean>(false);
 
   const setMapCenter = () => {
     if (!map) return;
@@ -58,7 +60,7 @@ const MainPage = () => {
       icon: <FaTrashAlt />,
       onClick: () => {
         setActiveBtn("reset");
-        setMapReset(!mapReset);
+        setGisResetState({ reset: true });
       },
     },
     { icon: <HiOutlineDotsHorizontal />, onClick: onToolboxToggle },
@@ -87,10 +89,10 @@ const MainPage = () => {
         onClose={onToolboxClose}
         triggerRef={toolboxButtonRef}
       >
-        <MeaserToolBox reset={mapReset} />
+        <MeaserToolBox />
       </Menu>
       <>
-        <MarkerLayer buttonType={activeBtn} reset={mapReset} />
+        <MarkerLayer buttonType={activeBtn} />
       </>
     </ComponentWrapper>
   );

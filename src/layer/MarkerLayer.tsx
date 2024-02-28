@@ -11,21 +11,22 @@ import markerImage from "../assets/images/marker.png";
 
 import MapContext from "../map/MapContext";
 import { Coordinate } from "ol/coordinate";
+import { gisMapResetStateAtom } from "../store";
+import { useRecoilState, useResetRecoilState } from "recoil";
 
 interface MarkerLayerProps {
-  reset?: boolean;
   zIndex?: number;
   buttonType?: "marker" | "input" | "reset" | "none";
 }
 
-const MarkerLayer = ({
-  reset = false,
-  zIndex = 20,
-  buttonType,
-}: MarkerLayerProps) => {
+const MarkerLayer = ({ zIndex = 20, buttonType }: MarkerLayerProps) => {
   const { map } = useContext(MapContext);
 
   const [markerLayer, setMarkerLayer] = useState<VectorLayer<any>>();
+
+  const [gisMeasureState, setGisMeasureState] =
+    useRecoilState(gisMapResetStateAtom);
+  const resetGisMeasureState = useResetRecoilState(gisMapResetStateAtom);
 
   useEffect(() => {
     if (!map) return;
@@ -81,10 +82,14 @@ const MarkerLayer = ({
   }, [map, markerLayer, addMarker, buttonType]);
 
   useEffect(() => {
-    if (reset) {
+    if (gisMeasureState.reset) {
       markerLayer?.getSource().clear();
+      setGisMeasureState({ reset: false });
     }
-  }, [reset]);
+    return () => {
+      resetGisMeasureState();
+    };
+  }, [gisMeasureState.reset]);
 
   return null;
 };

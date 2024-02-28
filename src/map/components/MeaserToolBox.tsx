@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import styled from "styled-components";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
-import { Circle as CircleStyle, Fill, Stroke, Style, Text } from "ol/style";
+import { Circle as CircleStyle, Fill, Stroke, Style } from "ol/style";
 import { Draw } from "ol/interaction";
 import Overlay from "ol/Overlay";
 import { unByKey } from "ol/Observable";
@@ -24,15 +24,17 @@ import {
   formatRadius,
 } from "../../utils/measureFormat";
 import { getOverlays } from "../../utils/overlay";
+import { gisMapResetStateAtom } from "../../store";
+import { useRecoilState, useResetRecoilState } from "recoil";
 
 type MeasureType = "LineString" | "Polygon" | "Circle";
 
-interface IMeasureTest {
-  reset: boolean;
-}
-
-const MeaserToolBox = ({ reset }: IMeasureTest) => {
+const MeaserToolBox = () => {
   const { map } = useContext(MapContext);
+
+  const [gisMeasureState, setGisMeasureState] =
+    useRecoilState(gisMapResetStateAtom);
+  const resetGisMeasureState = useResetRecoilState(gisMapResetStateAtom);
 
   const [measureLayer, setMeasureLayer] = useState<VectorLayer<any>>();
   const [measureType, setMeasureType] = useState<MeasureType>();
@@ -164,7 +166,6 @@ const MeaserToolBox = ({ reset }: IMeasureTest) => {
 
     newDraw.on("drawend", () => {
       const measureTooltips = getOverlays(map, measureTooltipIdPrefix);
-      console.log("measureTooltips", measureTooltips);
       const measureTooltip = measureTooltips[measureTooltips.length - 1];
       const measureTooltipElement = measureTooltip.getElement();
       if (measureTooltipElement) {
@@ -197,24 +198,27 @@ const MeaserToolBox = ({ reset }: IMeasureTest) => {
   };
 
   useEffect(() => {
-    if (!map) return;
-    if (reset) {
-      measureLayer?.getSource().clear();
+    if (!map || !measureLayer) return;
+
+    if (gisMeasureState.reset) {
       setMeasureType(undefined);
+      setGisMeasureState({ reset: false });
 
-      const measureTooltips = getOverlays(map, measureTooltipIdPrefix);
-      if (measureTooltips) {
-        measureTooltips.forEach((measureTooltip) =>
-          map.removeOverlay(measureTooltip)
-        );
-      }
-
+      measureLayer.getSource().clear();
       if (measureDraw) {
         map.removeInteraction(measureDraw);
         setMeasureDraw(undefined);
       }
+      const measureTooltips = getOverlays(map, measureTooltipIdPrefix);
+      measureTooltips.forEach((measureTooltip) =>
+        map.removeOverlay(measureTooltip)
+      );
     }
-  }, [reset]);
+
+    return () => {
+      resetGisMeasureState();
+    };
+  }, [gisMeasureState.reset]);
 
   return (
     <ComponentWrapper>
@@ -254,7 +258,7 @@ const MeaserToolBox = ({ reset }: IMeasureTest) => {
 const ComponentWrapper = styled.div`
   position: absolute;
   background-color: #fff;
-  top: 401px;
+  top: 370px;
   left: 36px;
   border: #adacac 0.5px solid;
   border-radius: 4px;

@@ -1,10 +1,12 @@
 import { atom } from "recoil";
-import { IInput } from "../components/Input";
 
-export const inputStateAtom = atom<IInput>({
-  key: "inputStateAtom",
+export interface IMapState {
+  reset: boolean;
+}
+
+export const gisMapResetStateAtom = atom<IMapState>({
+  key: "gisMapResetStateAtom",
   default: {
-    value: "",
-    isopen: false,
+    reset: false,
   },
 });
