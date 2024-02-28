@@ -3,7 +3,7 @@ import styled from "styled-components";
 import MapContext from "./MapContext";
 import "ol/ol.css";
 import { Map as OlMap, View } from "ol";
-import { OverviewMap, defaults as defaultControls } from "ol/control";
+import { defaults as defaultControls } from "ol/control";
 import { fromLonLat } from "ol/proj";
 import { Tile as TileLayer } from "ol/layer";
 import { OSM } from "ol/source";

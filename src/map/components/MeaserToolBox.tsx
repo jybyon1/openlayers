@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import styled from "styled-components";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
-import { Circle as CircleStyle, Fill, Stroke, Style } from "ol/style";
+import { Circle as CircleStyle, Fill, Stroke, Style, Text } from "ol/style";
 import { Draw } from "ol/interaction";
 import Overlay from "ol/Overlay";
 import { unByKey } from "ol/Observable";
@@ -23,19 +23,24 @@ import {
   formatLength,
   formatRadius,
 } from "../../utils/measureFormat";
+import { getOverlays } from "../../utils/overlay";
 
 type MeasureType = "LineString" | "Polygon" | "Circle";
 
-const MeasureTest = () => {
+interface IMeasureTest {
+  reset: boolean;
+}
+
+const MeaserToolBox = ({ reset }: IMeasureTest) => {
   const { map } = useContext(MapContext);
 
   const [measureLayer, setMeasureLayer] = useState<VectorLayer<any>>();
   const [measureType, setMeasureType] = useState<MeasureType>();
-  const [measureTooltip, setMeasureTooltip] = useState<Overlay>();
   const [measureDraw, setMeasureDraw] = useState<Draw>();
 
   const measureTooltipElement = document.createElement("div");
   measureTooltipElement.className = "ol-tooltip ol-tooltip-measure";
+  const measureTooltipIdPrefix = "measure-tooltip";
 
   const polygonStyle = new Style({
     stroke: new Stroke({
@@ -61,9 +66,6 @@ const MeasureTest = () => {
       radius: 5,
       stroke: new Stroke({
         color: "rgba(0, 0, 0, 0.7)",
-      }),
-      fill: new Fill({
-        color: "rgba(255, 255, 255, 0.2)",
       }),
     }),
   });
@@ -103,11 +105,28 @@ const MeasureTest = () => {
     setMeasureDraw(draw);
 
     createMeasureTooltip();
-    addMeasureTooltipChangeEvent(draw);
+    createMeasureTooltipChangeEvent(draw);
   };
 
-  const addMeasureTooltipChangeEvent = (newDraw: Draw) => {
-    if (!map || !measureTooltip) return;
+  const createMeasureTooltip = () => {
+    if (!map) return;
+
+    const measureTooltips = getOverlays(map, measureTooltipIdPrefix);
+    const measureTooltipElement = document.createElement("div");
+    measureTooltipElement.className = "ol-tooltip ol-tooltip-measure";
+    const measureTooltip = new Overlay({
+      id: measureTooltipIdPrefix + measureTooltips.length,
+      element: measureTooltipElement,
+      offset: [0, -15],
+      positioning: "bottom-center",
+      stopEvent: false,
+      insertFirst: false,
+    });
+    map.addOverlay(measureTooltip);
+  };
+
+  const createMeasureTooltipChangeEvent = (newDraw: Draw) => {
+    if (!map) return;
 
     let changeEventListener: EventsKey;
 
@@ -115,11 +134,12 @@ const MeasureTest = () => {
       const sketch = e.feature;
       const geometry = sketch.getGeometry();
 
-      let tooltipCoord: Coordinate;
       if (geometry) {
         changeEventListener = geometry.on("change", (evt) => {
           const geom = evt.target;
-          let output;
+
+          let output = "";
+          let tooltipCoord: Coordinate = [0, 0];
           if (geom instanceof LineString) {
             output = formatLength(geom);
             tooltipCoord = geom.getLastCoordinate();
@@ -130,33 +150,31 @@ const MeasureTest = () => {
             output = formatRadius(geom);
             tooltipCoord = geom.getFirstCoordinate();
           }
-          if (output) measureTooltipElement.innerHTML = output;
+
+          const measureTooltips = getOverlays(map, measureTooltipIdPrefix);
+          const measureTooltip = measureTooltips[measureTooltips.length - 1];
+          const measureTooltipElement = measureTooltip.getElement();
+          if (measureTooltipElement) {
+            measureTooltipElement.innerHTML = output;
+          }
           measureTooltip.setPosition(tooltipCoord);
         });
       }
     });
 
     newDraw.on("drawend", () => {
-      measureTooltip.setOffset([0, 0]);
+      const measureTooltips = getOverlays(map, measureTooltipIdPrefix);
+      console.log("measureTooltips", measureTooltips);
+      const measureTooltip = measureTooltips[measureTooltips.length - 1];
+      const measureTooltipElement = measureTooltip.getElement();
+      if (measureTooltipElement) {
+        measureTooltipElement.className = "ol-tooltip ol-tooltip-static";
+      }
+      measureTooltip.setOffset([0, -7]);
 
       createMeasureTooltip();
-      // 이벤트 리스너를 해제하는 메소드
       unByKey(changeEventListener);
     });
-  };
-
-  const createMeasureTooltip = () => {
-    if (!map) return;
-
-    const _measureTooltip = new Overlay({
-      element: measureTooltipElement,
-      offset: [0, -15],
-      positioning: "bottom-center",
-      stopEvent: false,
-      insertFirst: false,
-    });
-    map.addOverlay(_measureTooltip);
-    setMeasureTooltip(_measureTooltip);
   };
 
   useEffect(() => {
@@ -177,6 +195,26 @@ const MeasureTest = () => {
       prevType === selectedType ? undefined : selectedType
     );
   };
+
+  useEffect(() => {
+    if (!map) return;
+    if (reset) {
+      measureLayer?.getSource().clear();
+      setMeasureType(undefined);
+
+      const measureTooltips = getOverlays(map, measureTooltipIdPrefix);
+      if (measureTooltips) {
+        measureTooltips.forEach((measureTooltip) =>
+          map.removeOverlay(measureTooltip)
+        );
+      }
+
+      if (measureDraw) {
+        map.removeInteraction(measureDraw);
+        setMeasureDraw(undefined);
+      }
+    }
+  }, [reset]);
 
   return (
     <ComponentWrapper>
@@ -249,4 +287,4 @@ const ToolText = styled.span`
   font-weight: bold;
 `;
 
-export default MeasureTest;
+export default MeaserToolBox;
